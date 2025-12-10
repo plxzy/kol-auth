@@ -1,67 +1,40 @@
-# Canonical auth defaults used by auth-server and auth-core.
-# Override via environment variables (names shown).
+# Safe, non-secret defaults for local development.
+# Override via environment variables or external config. Do not commit real secrets.
 
 auth:
-  # DB
-  db_url_env: "AUTH_DB_URL"
+  env:
+    jwt_secret: ${AUTH_JWT_SECRET:-"CHANGE_ME_SUPER_SECRET"}
+    db_url: ${AUTH_DB_URL:-"jdbc:postgresql://localhost:5432/kol_auth"}
+    db_user: ${AUTH_DB_USER:-"kol_auth"}
+    db_password: ${AUTH_DB_PASSWORD:-"kol_dev_password"}
 
-  # Password hashing (Argon2id)
-  argon2:
-    time: ${ARGON2_TIME:-3}
-    memory_kb: ${ARGON2_MEMORY_KB:-65536}   # 64 MB
-    parallelism: ${ARGON2_PARALLELISM:-1}
-    pepper_env: ${ARGON2_PEPPER_ENV:-""}    # optional secret manager key name
+  tokens:
+    issuer: ${AUTH_JWT_ISSUER:-"https://auth.local.dev"}
+    audience: ${AUTH_JWT_AUDIENCE:-"kol-clients"}
+    algorithm: ${AUTH_JWT_ALG:-"HS256"}
+    access_ttl_seconds: ${AUTH_ACCESS_TTL_SECONDS:-900}
+    refresh_ttl_seconds: ${AUTH_REFRESH_TTL_SECONDS:-1209600}
+    refresh_rotation: ${AUTH_REFRESH_ROTATION:-"rotate"}
 
-  # JWT / Access token
-  jwt:
-    alg: ${AUTH_JWT_ALG:-RS256}                   # RS256 or ES256
-    private_key_path_env: ${AUTH_JWT_PRIVATE_KEY_PATH_ENV:-"AUTH_JWT_PRIVATE_KEY_PATH"}
-    issuer: ${AUTH_JWT_ISSUER:-"https://auth.example.com"}
-    audience: ${AUTH_JWT_AUDIENCE:-"kol-client"}
-    access_ttl_seconds: ${AUTH_ACCESS_TTL_SECONDS:-900}   # 15 minutes
+  hashing:
+    algorithm: "argon2id"
+    argon2:
+      iterations: ${ARGON2_TIME:-3}
+      memory_kib: ${ARGON2_MEMORY_KIB:-65536}
+      parallelism: ${ARGON2_PARALLELISM:-1}
+      salt_length: 16
+      hash_length: 32
+      pepper_env: ${ARGON2_PEPPER_ENV:-"AUTH_PASSWORD_PEPPER"}
 
-  # Refresh tokens (opaque tokens)
-  refresh:
-    ttl_seconds: ${AUTH_REFRESH_TTL_SECONDS:-1209600}    # 14 days
-    token_bytes: ${AUTH_REFRESH_TOKEN_BYTES:-64}        # min entropy
-    rotate_on_use: ${AUTH_REFRESH_ROTATE_ON_USE:-true}
-    reuse_detect_action: ${AUTH_REFRESH_REUSE_ACTION:-"revoke_all"} # revoke_all | revoke_session
+  database:
+    schema: "auth"
+    user_table: "users"
+    session_table: "refresh_tokens"
 
-  # Rate limiting / brute force
-  rate_limit:
-    login_per_minute_per_ip: ${AUTH_LOGIN_PER_MINUTE_PER_IP:-5}
-    login_per_15min_per_account: ${AUTH_LOGIN_PER_15MIN_PER_ACCOUNT:-5}
-    register_per_minute_per_ip: ${AUTH_REGISTER_PER_MINUTE_PER_IP:-2}
-
-  # Session management
-  sessions:
-    table_name: ${AUTH_SESSIONS_TABLE:-sessions}
-    max_concurrent_per_user: ${AUTH_MAX_CONCURRENT_SESSIONS:-10}
-    device_info_capture: true
-
-  # Wallet verification
   wallet:
-    challenge_ttl_seconds: ${AUTH_WALLET_CHALLENGE_TTL:-300}  # 5 minutes
-    algorithm: ${AUTH_WALLET_ALGO:-ed25519}                  # Solana
+    challenge_ttl_seconds: ${AUTH_WALLET_CHALLENGE_TTL:-300}
+    algorithm: ${AUTH_WALLET_ALGO:-"ed25519"}
 
-  # Security / operational
-  tls:
-    required: ${AUTH_TLS_REQUIRED:-true}
-    min_version: ${AUTH_TLS_MIN:-1.2}
-
-  # Misc
-  login:
-    max_password_length: ${AUTH_MAX_PASSWORD_LENGTH:-1024}
-    min_password_length: ${AUTH_MIN_PASSWORD_LENGTH:-12}
-    common_password_blacklist: ${AUTH_COMMON_PASSWORD_BLACKLIST_PATH:-"/etc/kol/common-passwords.txt"}
-
-  # Keys & rotation
-  key_rotation:
-    signing_key_rotation_days: ${AUTH_KEY_ROTATION_DAYS:-90}
-    jwks_path: ${AUTH_JWKS_PATH:-"/.well-known/jwks.json"}
-
-# Additional operational envs
-env:
-  AUTH_DB_URL: "postgresql://user:pass@localhost:5432/kol_auth"
-  AUTH_JWT_PRIVATE_KEY_PATH: "/etc/kol/jwt_private.pem"
-  AUTH_JWT_PUBLIC_JWKS_URL: "https://auth.example.com/.well-known/jwks.json"
+guidance:
+  secrets: "Keep secrets in env/.env, never in git."
+  migrations: "Run ./gradlew :auth-server:flywayMigrate before starting auth-server."

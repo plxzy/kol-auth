@@ -2,8 +2,8 @@ plugins {
     `java-library`
 }
 
-group = "com.kol"
-version = "0.0.1"
+group = "dev.kol"
+version = "0.1.0-SNAPSHOT"
 
 subprojects {
     apply(plugin = "java")
@@ -16,6 +16,5 @@ subprojects {
         toolchain {
             languageVersion.set(JavaLanguageVersion.of(21))
         }
-        modularity.inferModulePath.set(true)
     }
 }

@@ -1,3 +1,11 @@
-/.gradle/
-/auth-core/build/
-/auth-server/build/
+.gradle/
+build/
+*/build/
+.idea/
+*.iml
+.DS_Store
+.env
+.env.*
+/out/
+/logs/
+!gradle/wrapper/gradle-wrapper.jar
