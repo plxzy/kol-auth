@@ -32,6 +32,16 @@ final class AuthValidationServer {
         this.server.createContext("/launcher/register", new RegisterHandler());
         this.server.createContext("/launcher/login", new LoginHandler());
         this.server.createContext("/launcher/logout", new LogoutHandler());
+        this.server.createContext("/ping", exchange -> {
+            byte[] payload = "pong".getBytes();
+            exchange.getResponseHeaders().set("Content-Type", "text/plain; charset=utf-8");
+            exchange.sendResponseHeaders(200, payload.length);
+            try (OutputStream out = exchange.getResponseBody()) {
+                out.write(payload);
+            } finally {
+                exchange.close();
+            }
+        });
     }
 
     static void launch(LauncherAuthService authService, String host, int port) throws Exception {
@@ -56,6 +66,17 @@ final class AuthValidationServer {
         public final void handle(HttpExchange exchange) throws IOException {
             try {
                 handleJson(exchange);
+            } catch (Exception ex) {
+                ex.printStackTrace(System.err);
+                try {
+                    byte[] payload = JSON.writeValueAsBytes(ApiError.of("server_error"));
+                    exchange.getResponseHeaders().set("Content-Type", "application/json; charset=utf-8");
+                    exchange.sendResponseHeaders(500, payload.length);
+                    try (OutputStream out = exchange.getResponseBody()) {
+                        out.write(payload);
+                    }
+                } catch (Exception ignored) {
+                }
             } finally {
                 exchange.close();
             }
@@ -284,16 +305,16 @@ final class AuthValidationServer {
         }
     }
 
-    private record ValidationRequest(String token, String kolUuid, String username) {}
+    public static record ValidationRequest(String token, String kolUuid, String username) {}
 
-    private record RegisterRequest(String username, String password) {}
+    public static record RegisterRequest(String username, String password) {}
 
-    private record RegisterResponse(boolean ok, String kolUuid, String wallet) {}
+    public static record RegisterResponse(boolean ok, String kolUuid, String wallet) {}
 
-    private record LoginRequest(String username, String password) {}
-    private record LogoutRequest(String token) {}
+    public static record LoginRequest(String username, String password) {}
+    public static record LogoutRequest(String token) {}
 
-    private record LoginResponse(boolean ok, String username, String kolUuid, String token, String wallet, String error) {
+    public static record LoginResponse(boolean ok, String username, String kolUuid, String token, String wallet, String error) {
         static LoginResponse success(String username, String kolUuid, String token, String wallet) {
             return new LoginResponse(true, username, kolUuid, token, wallet, null);
         }
@@ -303,22 +324,21 @@ final class AuthValidationServer {
         }
     }
 
-    private record ApiError(boolean ok, String error) {
+    public static record ApiError(boolean ok, String error) {
         static ApiError of(String message) {
             return new ApiError(false, message);
         }
     }
 
-    private record ValidationResponse(boolean valid, String kolUuid, String message) {
+    public static record ValidationResponse(boolean valid, String kolUuid, String message) {
         static ValidationResponse invalid(String message) {
             return new ValidationResponse(false, null, message);
         }
     }
 
-    private record LogoutResponse(boolean ok, String error) {
+    public static record LogoutResponse(boolean ok, String error) {
         static LogoutResponse success() {
             return new LogoutResponse(true, null);
         }
     }
 }
-
