@@ -7,6 +7,12 @@ plugins {
 group = "dev.kol"
 version = rootProject.version
 
+buildscript {
+    dependencies {
+        classpath("org.flywaydb:flyway-database-postgresql:11.19.0")
+    }
+}
+
 repositories {
     mavenCentral()
 }
