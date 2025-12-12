@@ -1,0 +1,27 @@
+{
+  "name": "kol-auth",
+  "version": "1.0.0",
+  "description": "Gradle multi-project containing shared auth library (`auth-core`) and HTTP service (`auth-server`).",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/plxzy255/kol-auth.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/plxzy255/kol-auth/issues"
+  },
+  "homepage": "https://github.com/plxzy255/kol-auth#readme",
+  "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/user-event": "^14.6.1",
+    "jsdom": "^27.3.0",
+    "vitest": "^4.0.15"
+  }
+}
