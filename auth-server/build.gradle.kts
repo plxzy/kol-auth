@@ -35,6 +35,7 @@ dependencies {
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
     implementation("org.flywaydb:flyway-core:11.19.0")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:11.19.0")
     runtimeOnly("org.postgresql:postgresql:42.7.3")
 
     testImplementation(platform("org.junit:junit-bom:5.10.2"))
@@ -50,13 +51,20 @@ dependencies {
 }
 
 tasks.test {
-    useJUnitPlatform()
+    useJUnitPlatform {
+        // DB tests require Docker/Testcontainers. Keep them opt-in.
+        val runDb = (System.getenv("DB_TESTS") ?: "false").equals("true", ignoreCase = true) ||
+                (project.findProperty("dbTests")?.toString() ?: "false").equals("true", ignoreCase = true)
+        if (!runDb) {
+            excludeTags("db")
+        }
+    }
 }
 
 flyway {
     url = System.getenv("AUTH_DB_URL") ?: System.getProperty("AUTH_DB_URL") ?: "jdbc:postgresql://localhost:5432/kol_auth"
     user = System.getenv("AUTH_DB_USER") ?: System.getProperty("AUTH_DB_USER") ?: "kol_auth"
     password = System.getenv("AUTH_DB_PASSWORD") ?: System.getProperty("AUTH_DB_PASSWORD") ?: "kol_dev_password"
-    locations = arrayOf("filesystem:$projectDir/migrations")
+    locations = arrayOf("filesystem:$projectDir/src/main/resources/db/migration")
     cleanDisabled = true
 }

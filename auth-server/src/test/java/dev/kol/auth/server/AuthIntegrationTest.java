@@ -37,7 +37,14 @@ class AuthIntegrationTest {
         RestAssured.baseURI = "http://localhost";
 
         // Manually assemble dependencies to avoid complex DI setup for this simple test
-        AuthServerConfig config = AuthServerConfig.fromEnv();
+        AuthServerConfig envConfig = AuthServerConfig.fromEnv();
+        AuthServerConfig config = new AuthServerConfig(
+                envConfig.port(),
+                envConfig.tokenConfig(),
+                envConfig.hashingConfig(),
+                envConfig.dbConfig(),
+                AuthStorage.IN_MEMORY
+        );
         TokenConfig tokenConfig = config.tokenConfig();
         TokenService tokenService = new JwtTokenService(tokenConfig);
         PasswordHasher passwordHasher = new Argon2PasswordHasher(config.hashingConfig());

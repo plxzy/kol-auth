@@ -10,7 +10,9 @@ import dev.kol.auth.core.tokens.TokenConfig;
 public record AuthServerConfig(
         int port,
         TokenConfig tokenConfig,
-        HashingConfig hashingConfig
+        HashingConfig hashingConfig,
+        DbConfig dbConfig,
+        AuthStorage storage
 ) {
     public static AuthServerConfig fromEnv() {
         int port = intEnv("AUTH_SERVER_PORT", 8080);
@@ -27,7 +29,15 @@ public record AuthServerConfig(
         TokenConfig tokenConfig = new TokenConfig(issuer, audience, accessTtl, refreshTtl, secret);
         HashingConfig hashingConfig = new HashingConfig(argonTime, argonMemory, argonParallelism);
 
-        return new AuthServerConfig(port, tokenConfig, hashingConfig);
+        String dbUrl = env("AUTH_DB_URL", "jdbc:postgresql://localhost:5432/kol_auth");
+        String dbUser = env("AUTH_DB_USER", "kol_auth");
+        String dbPassword = env("AUTH_DB_PASSWORD", "kol_dev_password");
+        String dbSchema = env("AUTH_DB_SCHEMA", "auth");
+
+        AuthStorage storage = AuthStorage.fromEnv(env("AUTH_STORAGE", "postgres"));
+        DbConfig dbConfig = new DbConfig(dbUrl, dbUser, dbPassword, dbSchema);
+
+        return new AuthServerConfig(port, tokenConfig, hashingConfig, dbConfig, storage);
     }
 
     private static String env(String key, String defaultValue) {

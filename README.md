@@ -4,7 +4,7 @@ Gradle multi-project containing shared auth library (`auth-core`) and HTTP servi
 
 ## Modules
 - `auth-core` — domain models (User, Session, TokenPair), DTOs, and service interfaces. Publish to Maven local for consumers (`dev.kol:auth-core`).
-- `auth-server` — minimal HTTP server exposing `/auth/*` endpoints. Uses in-memory storage today; swap in a real DB implementation later.
+- `auth-server` — minimal HTTP server exposing `/auth/*` endpoints. Supports Postgres-backed persistence (users + refresh tokens).
 
 ## Prereqs
 - JDK 21
@@ -13,9 +13,8 @@ Gradle multi-project containing shared auth library (`auth-core`) and HTTP servi
 
 ## Quick Start
 1) Start dev DB (from `kol-platform`): `docker compose -f ../kol-platform/docker-compose.dev.yml up -d`.
-2) Run migrations: `./gradlew :auth-server:flywayMigrate`.
-3) Start server: `./gradlew :auth-server:run`.
-4) Try endpoints:
+2) Start server (runs migrations automatically): `./gradlew :auth-server:run`.
+3) Try endpoints:
    - `POST http://localhost:8080/auth/register`
    - `POST http://localhost:8080/auth/login`
    - `POST http://localhost:8080/auth/refresh`
@@ -30,12 +29,14 @@ This publishes `dev.kol:auth-core:0.1.0-SNAPSHOT`, which `kol-fabric` and `kol-l
 ## Build & Test
 - Build all: `./gradlew build`
 - Run service only: `./gradlew :auth-server:run`
-- Flyway migrations: `./gradlew :auth-server:flywayMigrate`
+- Flyway migrations (manual): `./gradlew :auth-server:flywayMigrate`
 
 ## Environment Variables
+- `AUTH_STORAGE` (`postgres` default; set to `inmemory` to disable persistence)
 - `AUTH_DB_URL` (default `jdbc:postgresql://localhost:5432/kol_auth`)
 - `AUTH_DB_USER` (default `kol_auth`)
 - `AUTH_DB_PASSWORD` (default `kol_dev_password`)
+- `AUTH_DB_SCHEMA` (default `auth`)
 - `AUTH_JWT_SECRET` (default `CHANGE_ME_SUPER_SECRET`)
 - `AUTH_JWT_ISSUER` / `AUTH_JWT_AUDIENCE`
 - `AUTH_ACCESS_TTL_SECONDS` / `AUTH_REFRESH_TTL_SECONDS`
@@ -47,9 +48,13 @@ Defaults live in `config/auth.defaults.yml` and mirror `kol-platform/config/auth
 - Spec lives in `openapi/openapi.yml` (keep in sync with `kol-platform/openapi/auth.yaml`).
 
 ## Migrations
-- Files live in `auth-server/migrations`.
+- Files live in `auth-server/src/main/resources/db/migration`.
 - Schema creates `auth.users` and `auth.refresh_tokens`.
 - Flyway plugin is configured to read DB creds from env/system properties; clean is disabled by default.
+
+## Where Data Lives
+- Users: `auth.users`
+- Refresh tokens/sessions: `auth.refresh_tokens`
 
 ## Docker
 Build a dev image (no secrets baked in):

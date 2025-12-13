@@ -37,4 +37,4 @@ auth:
 
 guidance:
   secrets: "Keep secrets in env/.env, never in git."
-  migrations: "Run ./gradlew :auth-server:flywayMigrate before starting auth-server."
+  migrations: "auth-server runs Flyway migrations on startup; you can also run ./gradlew :auth-server:flywayMigrate manually."

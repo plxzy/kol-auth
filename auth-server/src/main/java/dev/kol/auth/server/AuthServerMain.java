@@ -2,7 +2,6 @@ package dev.kol.auth.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import dev.kol.auth.core.dto.AuthResponse;
 import dev.kol.auth.core.dto.ErrorResponse;
 import dev.kol.auth.core.dto.LoginRequest;
 import dev.kol.auth.core.dto.LogoutRequest;
@@ -16,18 +15,17 @@ import dev.kol.auth.core.tokens.TokenConfig;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpHandler;
 import com.sun.net.httpserver.HttpServer;
+import org.flywaydb.core.Flyway;
 
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.concurrent.Executors;
 import java.util.function.Function;
 
 /**
  * Minimal HTTP server exposing /auth/* endpoints.
- * TODO: replace in-memory storage with database-backed services.
  */
 public class AuthServerMain {
     public static void main(String[] args) throws IOException {
@@ -35,15 +33,44 @@ public class AuthServerMain {
         ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
 
         TokenConfig tokenConfig = config.tokenConfig();
-        TokenService tokenService = new JwtTokenService(tokenConfig);
         PasswordHasher passwordHasher = new Argon2PasswordHasher(config.hashingConfig());
-        AuthService authService = new InMemoryAuthService(tokenService, passwordHasher);
+        AuthService authService = buildAuthService(config, tokenConfig, passwordHasher);
 
         HttpServer server = HttpServer.create(new InetSocketAddress(config.port()), 0);
         registerRoutes(server, mapper, authService);
         server.setExecutor(Executors.newCachedThreadPool());
         server.start();
-        System.out.printf("auth-server listening on http://localhost:%d%n", config.port());
+        System.out.printf(
+                "auth-server listening on http://localhost:%d (storage=%s, db=%s)%n",
+                config.port(),
+                config.storage().name().toLowerCase(),
+                config.dbConfig().url()
+        );
+    }
+
+    private static AuthService buildAuthService(AuthServerConfig config, TokenConfig tokenConfig, PasswordHasher passwordHasher) {
+        if (config.storage() == AuthStorage.IN_MEMORY) {
+            TokenService tokenService = new JwtTokenService(tokenConfig);
+            return new InMemoryAuthService(tokenService, passwordHasher);
+        }
+
+        DbConfig db = config.dbConfig();
+        runMigrations(db);
+
+        JdbcConnectionFactory connectionFactory = new JdbcConnectionFactory(db);
+        JdbcUserRepository userRepository = new JdbcUserRepository(connectionFactory, db.schema());
+        TokenService tokenService = new JdbcTokenService(connectionFactory, tokenConfig, db.schema());
+
+        return new JdbcAuthService(userRepository, tokenService, passwordHasher);
+    }
+
+    private static void runMigrations(DbConfig db) {
+        Flyway.configure()
+                .dataSource(db.url(), db.user(), db.password())
+                .schemas(db.schema())
+                .createSchemas(true)
+                .load()
+                .migrate();
     }
 
     private static void registerRoutes(HttpServer server, ObjectMapper mapper, AuthService authService) {
