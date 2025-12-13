@@ -53,12 +53,16 @@ public class AuthServerMain {
                 String migrationsPath = java.nio.file.Files.exists(java.nio.file.Path.of("migrations"))
                         ? "migrations"
                         : "auth-server/migrations";
-                Flyway.configure()
+                Flyway flyway = Flyway.configure()
                         .dataSource(config.dbUrl(), config.dbUser(), config.dbPassword())
                         .locations("filesystem:" + migrationsPath)
                         .schemas("auth")
                         .load()
-                        .migrate();
+                        ;
+                if (flywayRepairOnStart()) {
+                    flyway.repair();
+                }
+                flyway.migrate();
             }
             TokenService tokenService = new JdbcTokenService(db, tokenConfig);
             return new JdbcAuthService(db, tokenService, passwordHasher);
@@ -72,6 +76,12 @@ public class AuthServerMain {
     private static boolean flywayMigrateOnStart() {
         String value = System.getenv("AUTH_FLYWAY_MIGRATE_ON_START");
         if (value == null || value.isBlank()) return true;
+        return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
+    }
+
+    private static boolean flywayRepairOnStart() {
+        String value = System.getenv("AUTH_FLYWAY_REPAIR_ON_START");
+        if (value == null || value.isBlank()) return false;
         return "true".equalsIgnoreCase(value) || "1".equals(value) || "yes".equalsIgnoreCase(value);
     }
 
