@@ -36,7 +36,6 @@ class AuthIntegrationTest {
         RestAssured.port = port;
         RestAssured.baseURI = "http://localhost";
 
-        // Manually assemble dependencies to avoid complex DI setup for this simple test
         AuthServerConfig config = AuthServerConfig.fromEnv();
         TokenConfig tokenConfig = config.tokenConfig();
         TokenService tokenService = new JwtTokenService(tokenConfig);
@@ -76,7 +75,7 @@ class AuthIntegrationTest {
 
     @Test
     void shouldRegisterAndLoginUser() {
-        RegisterRequest registerRequest = new RegisterRequest("testuser", "test@example.com", "password123");
+        RegisterRequest registerRequest = new RegisterRequest("testuser", "test@example.com", "password123", "device-a");
 
         // Register
         given()
@@ -91,7 +90,7 @@ class AuthIntegrationTest {
             .body("tokens.accessToken", notNullValue());
 
         // Login
-        LoginRequest loginRequest = new LoginRequest("testuser", "password123");
+        LoginRequest loginRequest = new LoginRequest("testuser", "password123", "device-a");
 
         given()
             .contentType(ContentType.JSON)
@@ -106,10 +105,10 @@ class AuthIntegrationTest {
 
     @Test
     void shouldFailLoginWithWrongPassword() {
-        RegisterRequest registerRequest = new RegisterRequest("wrongpassuser", "wrong@example.com", "password123");
+        RegisterRequest registerRequest = new RegisterRequest("wrongpassuser", "wrong@example.com", "password123", "device-a");
         given().contentType(ContentType.JSON).body(registerRequest).post("/auth/register").then().statusCode(201);
 
-        LoginRequest loginRequest = new LoginRequest("wrongpassuser", "wrongpassword");
+        LoginRequest loginRequest = new LoginRequest("wrongpassuser", "wrongpassword", "device-a");
 
         given()
             .contentType(ContentType.JSON)
@@ -123,7 +122,7 @@ class AuthIntegrationTest {
 
     @Test
     void shouldRefreshToken() {
-        RegisterRequest registerRequest = new RegisterRequest("refreshuser", "refresh@example.com", "password123");
+        RegisterRequest registerRequest = new RegisterRequest("refreshuser", "refresh@example.com", "password123", "device-a");
         AuthResponse response = given()
             .contentType(ContentType.JSON)
             .body(registerRequest)
@@ -134,7 +133,7 @@ class AuthIntegrationTest {
 
         String refreshToken = response.tokens().refreshToken();
 
-        RefreshRequest refreshRequest = new RefreshRequest(refreshToken);
+        RefreshRequest refreshRequest = new RefreshRequest(refreshToken, "device-a");
 
         given()
             .contentType(ContentType.JSON)

@@ -60,8 +60,7 @@ public class InMemoryAuthService implements AuthService {
         usersByEmail.put(request.email().toLowerCase(), user);
         usersById.put(user.id(), user);
 
-        TokenService.RefreshResult issued = tokenService.issueTokens(user);
-        return new AuthResponse(UserProfile.from(user), issued.tokens());
+        return issueAndBuildResponse(user, request.deviceId());
     }
 
     @Override
@@ -76,14 +75,13 @@ public class InMemoryAuthService implements AuthService {
         if (user == null || !passwordHasher.verify(request.password().toCharArray(), user.passwordHash())) {
             throw new AuthException(401, "Invalid credentials");
         }
-        TokenService.RefreshResult issued = tokenService.issueTokens(user);
-        return new AuthResponse(UserProfile.from(user), issued.tokens());
+        return issueAndBuildResponse(user, request.deviceId());
     }
 
     @Override
     public AuthResponse refresh(RefreshRequest request) {
         if (request == null) throw new AuthException(400, "Request body required");
-        TokenService.RefreshResult refreshed = tokenService.refreshTokens(request.refreshToken());
+        TokenService.RefreshResult refreshed = tokenService.refreshTokens(request.refreshToken(), request.deviceId());
         User user = requireUser(refreshed.userId());
         return new AuthResponse(UserProfile.from(user), refreshed.tokens());
     }
@@ -91,7 +89,8 @@ public class InMemoryAuthService implements AuthService {
     @Override
     public void logout(LogoutRequest request) {
         if (request == null) throw new AuthException(400, "Request body required");
-        tokenService.revokeRefreshToken(request.refreshToken());
+        String refreshToken = request.refreshToken() != null ? request.refreshToken() : request.token();
+        tokenService.revokeRefreshToken(refreshToken);
     }
 
     @Override
@@ -130,5 +129,10 @@ public class InMemoryAuthService implements AuthService {
         if (password.length() < 8) {
             throw new AuthException(400, "Password must be at least 8 characters (12+ recommended)");
         }
+    }
+
+    private AuthResponse issueAndBuildResponse(User user, String deviceId) {
+        TokenService.RefreshResult issued = tokenService.issueTokens(user, deviceId);
+        return new AuthResponse(UserProfile.from(user), issued.tokens());
     }
 }

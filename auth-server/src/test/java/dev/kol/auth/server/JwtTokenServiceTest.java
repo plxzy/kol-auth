@@ -40,7 +40,7 @@ class JwtTokenServiceTest {
     void shouldIssueTokensForUser() {
         User user = new User(UUID.randomUUID(), "testUser", "test@example.com", "hash", Instant.now(), Instant.now());
 
-        RefreshResult result = tokenService.issueTokens(user);
+        RefreshResult result = tokenService.issueTokens(user, "device-a");
 
         assertThat(result).isNotNull();
         assertThat(result.userId()).isEqualTo(user.id());
@@ -65,10 +65,10 @@ class JwtTokenServiceTest {
     @Test
     void shouldRefreshTokens() {
         User user = new User(UUID.randomUUID(), "testUser", "test@example.com", "hash", Instant.now(), Instant.now());
-        RefreshResult initialResult = tokenService.issueTokens(user);
+        RefreshResult initialResult = tokenService.issueTokens(user, "device-a");
         String refreshToken = initialResult.tokens().refreshToken();
 
-        RefreshResult refreshResult = tokenService.refreshTokens(refreshToken);
+        RefreshResult refreshResult = tokenService.refreshTokens(refreshToken, "device-a");
 
         assertThat(refreshResult).isNotNull();
         assertThat(refreshResult.userId()).isEqualTo(user.id());
@@ -79,7 +79,7 @@ class JwtTokenServiceTest {
 
     @Test
     void shouldThrowExceptionWhenRefreshingWithInvalidToken() {
-        assertThatThrownBy(() -> tokenService.refreshTokens("invalid-token"))
+        assertThatThrownBy(() -> tokenService.refreshTokens("invalid-token", "device-a"))
                 .isInstanceOf(AuthException.class)
                 .hasMessageContaining("Refresh token invalid or expired"); // Depending on exact error message logic
     }
@@ -87,14 +87,25 @@ class JwtTokenServiceTest {
     @Test
     void shouldThrowExceptionWhenRefreshingWithRevokedToken() {
         User user = new User(UUID.randomUUID(), "testUser", "test@example.com", "hash", Instant.now(), Instant.now());
-        RefreshResult initialResult = tokenService.issueTokens(user);
+        RefreshResult initialResult = tokenService.issueTokens(user, "device-a");
         String refreshToken = initialResult.tokens().refreshToken();
 
         tokenService.revokeRefreshToken(refreshToken);
 
-        assertThatThrownBy(() -> tokenService.refreshTokens(refreshToken))
+        assertThatThrownBy(() -> tokenService.refreshTokens(refreshToken, "device-a"))
                 .isInstanceOf(AuthException.class)
                 .hasMessageContaining("Refresh token invalid or expired");
+    }
+
+    @Test
+    void shouldRejectRefreshFromDifferentDevice() {
+        User user = new User(UUID.randomUUID(), "testUser", "test@example.com", "hash", Instant.now(), Instant.now());
+        RefreshResult initialResult = tokenService.issueTokens(user, "device-a");
+        String refreshToken = initialResult.tokens().refreshToken();
+
+        assertThatThrownBy(() -> tokenService.refreshTokens(refreshToken, "device-b"))
+                .isInstanceOf(AuthException.class)
+                .hasMessageContaining("invalid for device");
     }
     
     @Test

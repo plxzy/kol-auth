@@ -28,7 +28,7 @@ public class JwtTokenService implements TokenService {
     private final TokenConfig config;
     private final SecretKey key;
     private final SecureRandom random = new SecureRandom();
-    private final Map<String, Session> sessions = new ConcurrentHashMap<>();
+    private final Map<String, StoredSession> sessions = new ConcurrentHashMap<>();
 
     public JwtTokenService(TokenConfig config) {
         this.config = Objects.requireNonNull(config, "config");
@@ -36,8 +36,21 @@ public class JwtTokenService implements TokenService {
     }
 
     @Override
-    public RefreshResult issueTokens(User user) {
+    public RefreshResult issueTokens(User user, String deviceId) {
         Instant now = Instant.now();
+        if (deviceId == null || deviceId.isBlank()) {
+            throw new AuthException(400, "deviceId required");
+        }
+
+        // Revoke any existing sessions for this user (single active refresh token per account).
+        sessions.replaceAll((token, existing) -> {
+            Session session = existing.session();
+            if (session.userId().equals(user.id()) && !session.revoked()) {
+                return existing.withRevoked(now);
+            }
+            return existing;
+        });
+
         String access = buildAccessToken(user.id(), user.username(), user.email(), now);
         String refresh = generateRefreshToken();
         Session session = new Session(
@@ -52,28 +65,34 @@ public class JwtTokenService implements TokenService {
                 now,
                 null
         );
-        sessions.put(refresh, session);
+        sessions.put(refresh, new StoredSession(session, deviceId));
         return new RefreshResult(user.id(), new TokenPair(access, refresh));
     }
 
     @Override
-    public RefreshResult refreshTokens(String refreshToken) {
+    public RefreshResult refreshTokens(String refreshToken, String deviceId) {
         if (refreshToken == null || refreshToken.isBlank()) {
             throw new AuthException(400, "Refresh token required");
         }
+        if (deviceId == null || deviceId.isBlank()) {
+            throw new AuthException(400, "deviceId required");
+        }
         Instant now = Instant.now();
-        Session session = sessions.get(refreshToken);
-        if (session == null || session.revoked() || session.isExpired(now)) {
+        StoredSession stored = sessions.get(refreshToken);
+        if (stored == null || stored.session().revoked() || stored.session().isExpired(now)) {
             throw new AuthException(401, "Refresh token invalid or expired");
+        }
+        if (!Objects.equals(stored.deviceId(), deviceId)) {
+            throw new AuthException(401, "Refresh token invalid for device");
         }
 
         sessions.remove(refreshToken);
         String newRefresh = generateRefreshToken();
         Session rotated = new Session(
                 UUID.randomUUID(),
-                session.userId(),
-                session.username(),
-                session.email(),
+                stored.session().userId(),
+                stored.session().username(),
+                stored.session().email(),
                 newRefresh,
                 now.plusSeconds(config.refreshTtlSeconds()),
                 false,
@@ -81,10 +100,10 @@ public class JwtTokenService implements TokenService {
                 now,
                 refreshToken
         );
-        sessions.put(newRefresh, rotated);
+        sessions.put(newRefresh, new StoredSession(rotated, deviceId));
 
-        String access = buildAccessToken(session.userId(), session.username(), session.email(), now);
-        return new RefreshResult(session.userId(), new TokenPair(access, newRefresh));
+        String access = buildAccessToken(stored.session().userId(), stored.session().username(), stored.session().email(), now);
+        return new RefreshResult(stored.session().userId(), new TokenPair(access, newRefresh));
     }
 
     @Override
@@ -92,20 +111,9 @@ public class JwtTokenService implements TokenService {
         if (refreshToken == null) {
             return;
         }
-        Session session = sessions.get(refreshToken);
-        if (session != null) {
-            sessions.put(refreshToken, new Session(
-                    session.id(),
-                    session.userId(),
-                    session.username(),
-                    session.email(),
-                    session.refreshToken(),
-                    session.expiresAt(),
-                    true,
-                    session.createdAt(),
-                    Instant.now(),
-                    session.rotatedFrom()
-            ));
+        StoredSession existing = sessions.get(refreshToken);
+        if (existing != null && !existing.session().revoked()) {
+            sessions.put(refreshToken, existing.withRevoked(Instant.now()));
         }
     }
 
@@ -139,5 +147,23 @@ public class JwtTokenService implements TokenService {
             padded[i] = bytes[i % bytes.length];
         }
         return padded;
+    }
+
+    private record StoredSession(Session session, String deviceId) {
+        StoredSession withRevoked(Instant now) {
+            Session s = session;
+            return new StoredSession(new Session(
+                    s.id(),
+                    s.userId(),
+                    s.username(),
+                    s.email(),
+                    s.refreshToken(),
+                    s.expiresAt(),
+                    true,
+                    s.createdAt(),
+                    now,
+                    s.rotatedFrom()
+            ), deviceId);
+        }
     }
 }

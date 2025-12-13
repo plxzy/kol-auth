@@ -30,7 +30,7 @@ application {
 dependencies {
     implementation(project(":auth-core"))
     implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
-    implementation("de.mkammerer:argon2-jvm-nolibs:2.11")
+    implementation("de.mkammerer:argon2-jvm:2.11")
     implementation("io.jsonwebtoken:jjwt-api:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
     runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
