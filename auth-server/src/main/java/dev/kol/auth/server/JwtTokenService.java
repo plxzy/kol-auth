@@ -117,6 +117,22 @@ public class JwtTokenService implements TokenService {
         }
     }
 
+    @Override
+    public boolean isRefreshTokenValid(String refreshToken, String deviceId) {
+        if (refreshToken == null || refreshToken.isBlank()) {
+            return false;
+        }
+        if (deviceId == null || deviceId.isBlank()) {
+            return false;
+        }
+        Instant now = Instant.now();
+        StoredSession stored = sessions.get(refreshToken);
+        if (stored == null || stored.session().revoked() || stored.session().isExpired(now)) {
+            return false;
+        }
+        return Objects.equals(stored.deviceId(), deviceId);
+    }
+
     private String buildAccessToken(UUID userId, String username, String email, Instant issuedAt) {
         Instant expiry = issuedAt.plusSeconds(config.accessTtlSeconds());
         return Jwts.builder()

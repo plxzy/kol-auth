@@ -112,4 +112,12 @@ class JwtTokenServiceTest {
     void shouldNotThrowWhenRevokingNonExistentToken() {
         tokenService.revokeRefreshToken("non-existent-token");
     }
+
+    @Test
+    void shouldValidateRefreshTokenForSameDevice() {
+        User user = new User(UUID.randomUUID(), "testUser", "test@example.com", "hash", Instant.now(), Instant.now());
+        RefreshResult issued = tokenService.issueTokens(user, "device-a");
+        assertThat(tokenService.isRefreshTokenValid(issued.tokens().refreshToken(), "device-a")).isTrue();
+        assertThat(tokenService.isRefreshTokenValid(issued.tokens().refreshToken(), "device-b")).isFalse();
+    }
 }

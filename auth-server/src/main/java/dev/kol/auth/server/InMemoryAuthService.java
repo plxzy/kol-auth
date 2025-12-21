@@ -5,6 +5,7 @@ import dev.kol.auth.core.dto.LoginRequest;
 import dev.kol.auth.core.dto.LogoutRequest;
 import dev.kol.auth.core.dto.RefreshRequest;
 import dev.kol.auth.core.dto.RegisterRequest;
+import dev.kol.auth.core.dto.SessionValidateRequest;
 import dev.kol.auth.core.dto.WalletStatus;
 import dev.kol.auth.core.model.User;
 import dev.kol.auth.core.model.UserProfile;
@@ -91,6 +92,15 @@ public class InMemoryAuthService implements AuthService {
         if (request == null) throw new AuthException(400, "Request body required");
         String refreshToken = request.refreshToken() != null ? request.refreshToken() : request.token();
         tokenService.revokeRefreshToken(refreshToken);
+    }
+
+    @Override
+    public void validateSession(SessionValidateRequest request) {
+        if (request == null) throw new AuthException(400, "Request body required");
+        boolean ok = tokenService.isRefreshTokenValid(request.refreshToken(), request.deviceId());
+        if (!ok) {
+            throw new AuthException(401, "Refresh token invalid or expired");
+        }
     }
 
     @Override

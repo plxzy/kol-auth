@@ -5,6 +5,7 @@ import dev.kol.auth.core.dto.LoginRequest;
 import dev.kol.auth.core.dto.LogoutRequest;
 import dev.kol.auth.core.dto.RefreshRequest;
 import dev.kol.auth.core.dto.RegisterRequest;
+import dev.kol.auth.core.dto.SessionValidateRequest;
 import dev.kol.auth.core.dto.WalletStatus;
 import dev.kol.auth.core.model.User;
 import dev.kol.auth.core.model.UserProfile;
@@ -101,6 +102,15 @@ final class JdbcAuthService implements AuthService {
     }
 
     @Override
+    public void validateSession(SessionValidateRequest request) {
+        if (request == null) throw new AuthException(400, "Request body required");
+        boolean ok = tokenService.isRefreshTokenValid(request.refreshToken(), request.deviceId());
+        if (!ok) {
+            throw new AuthException(401, "Refresh token invalid or expired");
+        }
+    }
+
+    @Override
     public WalletStatus walletStatus() {
         return new WalletStatus(false, "Wallet verification stub; implement challenge/verify flow.");
     }
@@ -172,4 +182,3 @@ final class JdbcAuthService implements AuthService {
         if (password.length() < 8) throw new AuthException(400, "Password must be at least 8 characters (12+ recommended)");
     }
 }
-

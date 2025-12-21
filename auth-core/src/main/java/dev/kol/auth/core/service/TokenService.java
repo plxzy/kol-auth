@@ -8,6 +8,8 @@ public interface TokenService {
 
     RefreshResult refreshTokens(String refreshToken, String deviceId);
 
+    boolean isRefreshTokenValid(String refreshToken, String deviceId);
+
     void revokeRefreshToken(String refreshToken);
 
     record RefreshResult(java.util.UUID userId, TokenPair tokens) {

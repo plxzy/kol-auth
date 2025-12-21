@@ -7,6 +7,7 @@ import dev.kol.auth.core.dto.LoginRequest;
 import dev.kol.auth.core.dto.LogoutRequest;
 import dev.kol.auth.core.dto.RefreshRequest;
 import dev.kol.auth.core.dto.RegisterRequest;
+import dev.kol.auth.core.dto.SessionValidateRequest;
 import dev.kol.auth.core.service.AuthException;
 import dev.kol.auth.core.service.AuthService;
 import dev.kol.auth.core.service.PasswordHasher;
@@ -89,6 +90,10 @@ public class AuthServerMain {
         server.createContext("/auth/login", jsonPost(mapper, body -> new Response(200, authService.login((LoginRequest) body)), LoginRequest.class));
         server.createContext("/auth/register", jsonPost(mapper, body -> new Response(201, authService.register((RegisterRequest) body)), RegisterRequest.class));
         server.createContext("/auth/refresh", jsonPost(mapper, body -> new Response(200, authService.refresh((RefreshRequest) body)), RefreshRequest.class));
+        server.createContext("/auth/validate", jsonPost(mapper, body -> {
+            authService.validateSession((SessionValidateRequest) body);
+            return new Response(204, null);
+        }, SessionValidateRequest.class));
         server.createContext("/auth/logout", jsonPost(mapper, body -> {
             authService.logout((LogoutRequest) body);
             return new Response(204, null);

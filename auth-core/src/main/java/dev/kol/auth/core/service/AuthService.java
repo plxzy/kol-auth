@@ -6,6 +6,7 @@ import dev.kol.auth.core.dto.RefreshRequest;
 import dev.kol.auth.core.dto.RegisterRequest;
 import dev.kol.auth.core.dto.WalletStatus;
 import dev.kol.auth.core.dto.LoginRequest;
+import dev.kol.auth.core.dto.SessionValidateRequest;
 
 public interface AuthService {
     AuthResponse register(RegisterRequest request);
@@ -15,6 +16,8 @@ public interface AuthService {
     AuthResponse refresh(RefreshRequest request);
 
     void logout(LogoutRequest request);
+
+    void validateSession(SessionValidateRequest request);
 
     WalletStatus walletStatus();
 }

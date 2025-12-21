@@ -121,6 +121,31 @@ final class JdbcTokenService implements TokenService {
         }
     }
 
+    @Override
+    public boolean isRefreshTokenValid(String refreshToken, String deviceId) {
+        if (refreshToken == null || refreshToken.isBlank()) return false;
+        if (deviceId == null || deviceId.isBlank()) return false;
+        Instant now = Instant.now();
+        try (Connection conn = db.connect();
+             PreparedStatement ps = conn.prepareStatement("""
+                     SELECT expires_at, revoked, device_info
+                     FROM auth.refresh_tokens
+                     WHERE token = ?
+                     """)) {
+            ps.setString(1, refreshToken);
+            try (ResultSet rs = ps.executeQuery()) {
+                if (!rs.next()) return false;
+                OffsetDateTime expires = rs.getObject("expires_at", OffsetDateTime.class);
+                boolean revoked = rs.getBoolean("revoked");
+                String storedDevice = rs.getString("device_info");
+                if (revoked || expires.toInstant().isBefore(now)) return false;
+                return Objects.equals(storedDevice, deviceId);
+            }
+        } catch (SQLException e) {
+            return false;
+        }
+    }
+
     private void revokeOtherDevices(Connection conn, UUID userId, String deviceId) throws SQLException {
         try (PreparedStatement ps = conn.prepareStatement("""
                 UPDATE auth.refresh_tokens
