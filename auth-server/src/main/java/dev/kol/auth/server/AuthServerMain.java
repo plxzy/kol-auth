@@ -45,6 +45,9 @@ public class AuthServerMain {
     }
 
     private static AuthService buildAuthService(AuthServerConfig config, TokenConfig tokenConfig, PasswordHasher passwordHasher) {
+        ObjectMapper mapper = new ObjectMapper().findAndRegisterModules();
+        MatrixRegistrationService matrixService = MatrixRegistrationService.fromConfig(config, mapper);
+
         String storage = System.getenv("AUTH_STORAGE");
         boolean useDb = storage == null || storage.isBlank() || !"inmemory".equalsIgnoreCase(storage);
 
@@ -66,12 +69,12 @@ public class AuthServerMain {
                 flyway.migrate();
             }
             TokenService tokenService = new JdbcTokenService(db, tokenConfig);
-            return new JdbcAuthService(db, tokenService, passwordHasher);
+            return new JdbcAuthService(db, tokenService, passwordHasher, matrixService);
         }
 
         // Fallback for local development.
         TokenService tokenService = new JwtTokenService(tokenConfig);
-        return new InMemoryAuthService(tokenService, passwordHasher);
+        return new InMemoryAuthService(tokenService, passwordHasher, matrixService);
     }
 
     private static boolean flywayMigrateOnStart() {

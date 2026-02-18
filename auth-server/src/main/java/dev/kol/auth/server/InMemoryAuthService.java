@@ -29,10 +29,12 @@ public class InMemoryAuthService implements AuthService {
     private final Map<UUID, User> usersById = new ConcurrentHashMap<>();
     private final TokenService tokenService;
     private final PasswordHasher passwordHasher;
+    private final MatrixRegistrationService matrixService; // nullable
 
-    public InMemoryAuthService(TokenService tokenService, PasswordHasher passwordHasher) {
+    public InMemoryAuthService(TokenService tokenService, PasswordHasher passwordHasher, MatrixRegistrationService matrixService) {
         this.tokenService = Objects.requireNonNull(tokenService, "tokenService");
         this.passwordHasher = Objects.requireNonNull(passwordHasher, "passwordHasher");
+        this.matrixService = matrixService;
     }
 
     @Override
@@ -61,7 +63,11 @@ public class InMemoryAuthService implements AuthService {
         usersByEmail.put(request.email().toLowerCase(), user);
         usersById.put(user.id(), user);
 
-        return issueAndBuildResponse(user, request.deviceId());
+        AuthResponse response = issueAndBuildResponse(user, request.deviceId());
+        if (matrixService != null) {
+            matrixService.registerUser(request.username(), request.password());
+        }
+        return response;
     }
 
     @Override

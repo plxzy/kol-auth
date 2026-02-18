@@ -27,11 +27,13 @@ final class JdbcAuthService implements AuthService {
     private final JdbcDatabase db;
     private final TokenService tokenService;
     private final PasswordHasher passwordHasher;
+    private final MatrixRegistrationService matrixService; // nullable
 
-    JdbcAuthService(JdbcDatabase db, TokenService tokenService, PasswordHasher passwordHasher) {
+    JdbcAuthService(JdbcDatabase db, TokenService tokenService, PasswordHasher passwordHasher, MatrixRegistrationService matrixService) {
         this.db = Objects.requireNonNull(db, "db");
         this.tokenService = Objects.requireNonNull(tokenService, "tokenService");
         this.passwordHasher = Objects.requireNonNull(passwordHasher, "passwordHasher");
+        this.matrixService = matrixService;
     }
 
     @Override
@@ -68,6 +70,9 @@ final class JdbcAuthService implements AuthService {
 
         User user = new User(id, request.username(), request.email(), hash, now, now);
         TokenService.RefreshResult issued = tokenService.issueTokens(user, request.deviceId());
+        if (matrixService != null) {
+            matrixService.registerUser(request.username(), request.password());
+        }
         return new AuthResponse(UserProfile.from(user), issued.tokens());
     }
 
