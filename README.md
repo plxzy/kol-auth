@@ -7,7 +7,7 @@ Gradle multi-project containing shared auth library (`auth-core`) and HTTP servi
 - `auth-server` — minimal HTTP server exposing `/auth/*` endpoints. Uses in-memory storage today; swap in a real DB implementation later.
 
 ## Prereqs
-- JDK 21
+- JDK 25
 - Docker (for Postgres) if you want to run migrations locally
 - `./gradlew` (wrapper included)
 
