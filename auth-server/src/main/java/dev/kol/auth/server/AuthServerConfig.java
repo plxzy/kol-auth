@@ -13,7 +13,9 @@ public record AuthServerConfig(
         HashingConfig hashingConfig,
         String dbUrl,
         String dbUser,
-        String dbPassword
+        String dbPassword,
+        String matrixHomeserverUrl,
+        String matrixRegistrationToken
 ) {
     public static AuthServerConfig fromEnv() {
         int port = intEnv("AUTH_SERVER_PORT", 8080);
@@ -31,15 +33,23 @@ public record AuthServerConfig(
         String dbUser = env("AUTH_DB_USER", "kol_auth");
         String dbPassword = env("AUTH_DB_PASSWORD", "kol_dev_password");
 
+        String matrixHomeserverUrl = optionalEnv("MATRIX_HOMESERVER_URL");
+        String matrixRegistrationToken = optionalEnv("MATRIX_REGISTRATION_TOKEN");
+
         TokenConfig tokenConfig = new TokenConfig(issuer, audience, accessTtl, refreshTtl, secret);
         HashingConfig hashingConfig = new HashingConfig(argonTime, argonMemory, argonParallelism);
 
-        return new AuthServerConfig(port, tokenConfig, hashingConfig, dbUrl, dbUser, dbPassword);
+        return new AuthServerConfig(port, tokenConfig, hashingConfig, dbUrl, dbUser, dbPassword, matrixHomeserverUrl, matrixRegistrationToken);
     }
 
     private static String env(String key, String defaultValue) {
         String value = System.getenv(key);
         return value == null || value.isBlank() ? defaultValue : value;
+    }
+
+    private static String optionalEnv(String key) {
+        String value = System.getenv(key);
+        return value == null || value.isBlank() ? null : value;
     }
 
     private static int intEnv(String key, int defaultValue) {
