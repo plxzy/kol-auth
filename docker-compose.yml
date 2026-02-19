@@ -1,0 +1,21 @@
+services:
+  postgres:
+    image: postgres:18
+    container_name: kol-auth-postgres
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:5432:5432"
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-kol_auth}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kol_dev_password}
+      POSTGRES_DB: ${POSTGRES_DB:-kol_auth}
+    volumes:
+      - kol-auth-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U kol_auth -d kol_auth"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  kol-auth-data:
