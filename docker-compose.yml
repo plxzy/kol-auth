@@ -10,7 +10,7 @@ services:
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-kol_dev_password}
       POSTGRES_DB: ${POSTGRES_DB:-kol_auth}
     volumes:
-      - kol-auth-data:/var/lib/postgresql/data
+      - kol-auth-data:/var/lib/postgresql
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U kol_auth -d kol_auth"]
       interval: 10s
