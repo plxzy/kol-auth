@@ -1,7 +1,7 @@
 plugins {
     java
     application
-    id("org.flywaydb.flyway") version "11.19.0"
+    id("org.flywaydb.flyway") version "12.0.1"
 }
 
 group = "dev.kol"
@@ -9,7 +9,7 @@ version = rootProject.version
 
 buildscript {
     dependencies {
-        classpath("org.flywaydb:flyway-database-postgresql:11.19.0")
+        classpath("org.flywaydb:flyway-database-postgresql:12.0.1")
     }
 }
 
@@ -29,24 +29,24 @@ application {
 
 dependencies {
     implementation(project(":auth-core"))
-    implementation("com.fasterxml.jackson.core:jackson-databind:2.17.1")
-    implementation("de.mkammerer:argon2-jvm:2.11")
-    implementation("io.jsonwebtoken:jjwt-api:0.12.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.5")
-    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.5")
-    implementation("org.flywaydb:flyway-core:11.19.0")
-    runtimeOnly("org.flywaydb:flyway-database-postgresql:11.19.0")
-    runtimeOnly("org.postgresql:postgresql:42.7.3")
+    implementation("com.fasterxml.jackson.core:jackson-databind:2.19.0")
+    implementation("de.mkammerer:argon2-jvm:2.12")
+    implementation("io.jsonwebtoken:jjwt-api:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-impl:0.12.6")
+    runtimeOnly("io.jsonwebtoken:jjwt-jackson:0.12.6")
+    implementation("org.flywaydb:flyway-core:12.0.1")
+    runtimeOnly("org.flywaydb:flyway-database-postgresql:12.0.1")
+    runtimeOnly("org.postgresql:postgresql:42.7.7")
 
-    testImplementation(platform("org.junit:junit-bom:5.10.2"))
+    testImplementation(platform("org.junit:junit-bom:5.12.0"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testImplementation("org.assertj:assertj-core:3.27.7")
-    testImplementation("org.mockito:mockito-core:5.11.0")
-    testImplementation("org.mockito:mockito-junit-jupiter:5.11.0")
+    testImplementation("org.mockito:mockito-core:5.18.0")
+    testImplementation("org.mockito:mockito-junit-jupiter:5.18.0")
     testImplementation("io.rest-assured:rest-assured:5.5.6")
-    testImplementation("org.testcontainers:testcontainers:2.0.2")
-    testImplementation("org.testcontainers:junit-jupiter:1.19.7")
-    testImplementation("org.testcontainers:postgresql:1.19.7")
+    testImplementation("org.testcontainers:testcontainers:1.21.3")
+    testImplementation("org.testcontainers:junit-jupiter:1.21.3")
+    testImplementation("org.testcontainers:postgresql:1.21.3")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
 }
 
