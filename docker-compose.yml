@@ -17,5 +17,26 @@ services:
       timeout: 5s
       retries: 5
 
+  auth-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: kol-auth-server
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:8080:8080"
+    environment:
+      AUTH_DB_URL: jdbc:postgresql://postgres:5432/kol_auth
+      AUTH_DB_USER: ${POSTGRES_USER:-kol_auth}
+      AUTH_DB_PASSWORD: ${POSTGRES_PASSWORD:-kol_dev_password}
+      AUTH_JWT_SECRET: ${AUTH_JWT_SECRET:-CHANGE_ME_SUPER_SECRET}
+      AUTH_JWT_ISSUER: ${AUTH_JWT_ISSUER:-kol-auth}
+      AUTH_JWT_AUDIENCE: ${AUTH_JWT_AUDIENCE:-kol-clients}
+      AUTH_ACCESS_TTL_SECONDS: ${AUTH_ACCESS_TTL_SECONDS:-900}
+      AUTH_REFRESH_TTL_SECONDS: ${AUTH_REFRESH_TTL_SECONDS:-604800}
+    depends_on:
+      postgres:
+        condition: service_healthy
+
 volumes:
   kol-auth-data:
