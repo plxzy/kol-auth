@@ -1,6 +1,6 @@
 plugins {
     `java-library`
-    `maven-publishing`
+    `maven-publish`
 }
 
 version = rootProject.version
