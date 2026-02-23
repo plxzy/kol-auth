@@ -1,6 +1,6 @@
 #!/bin/bash
-# Deploy kol-auth to VPS
-# Usage: ./deploy.sh
+# Deploy kol-auth to VPS using Docker Compose
+# Usage: ./deploy.sh [--build]
 
 set -e
 
@@ -8,9 +8,13 @@ VPS_HOST="root@64.188.119.201"
 VPS_PATH="/opt/kol-auth"
 LOCAL_PATH="/Users/psp/Development/kol-auth"
 
-echo "=== Deploying kol-auth to VPS ==="
+BUILD_FLAG="${1:-}"
+
+echo "=== Deploying kol-auth to VPS (Docker) ==="
 
 # Sync files (exclude .git, build artifacts, etc.)
+echo ""
+echo "=== Syncing files to VPS ==="
 rsync -avz --delete \
   --exclude '.git' \
   --exclude '.gradle' \
@@ -18,15 +22,23 @@ rsync -avz --delete \
   --exclude 'node_modules' \
   --exclude '.idea' \
   --exclude '*.log' \
+  --exclude 'auth-server/build' \
+  --exclude 'auth-core/build' \
   "$LOCAL_PATH/" "$VPS_HOST:$VPS_PATH/"
 
+# Deploy via Docker Compose
 echo ""
-echo "=== Building on VPS ==="
-ssh "$VPS_HOST" "cd $VPS_PATH && ./gradlew build -x test"
+echo "=== Deploying with Docker Compose ==="
+if [ "$BUILD_FLAG" == "--build" ]; then
+  ssh "$VPS_HOST" "cd $VPS_PATH && docker compose up --build -d"
+else
+  ssh "$VPS_HOST" "cd $VPS_PATH && docker compose up -d"
+fi
 
 echo ""
-echo "=== Restarting auth server ==="
-ssh "$VPS_HOST" "pkill -f 'auth-server:run' 2>/dev/null; cd $VPS_PATH && ./gradlew :auth-server:run > /tmp/auth-server.log 2>&1 &"
+echo "=== Health Check ==="
+ssh "$VPS_HOST" "docker ps --filter 'name=kol-auth' --format 'table {{.Names}}\t{{.Status}}\t{{.Ports}}'"
 
 echo ""
-echo "✅ Deployed! Check logs: ssh $VPS_HOST 'tail -f /tmp/auth-server.log'"
+echo "✅ Deployed!"
+echo "View logs: ssh $VPS_HOST 'cd $VPS_PATH && docker compose logs -f auth-server'"

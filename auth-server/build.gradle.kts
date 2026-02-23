@@ -2,6 +2,7 @@ plugins {
     java
     application
     id("org.flywaydb.flyway") version "12.0.1"
+    id("com.gradleup.shadow") version "9.0.0-beta4"
 }
 
 group = "dev.kol"
@@ -49,6 +50,13 @@ dependencies {
 
 tasks.test {
     useJUnitPlatform()
+}
+
+tasks.shadowJar {
+    manifest {
+        attributes["Main-Class"] = "dev.kol.auth.server.AuthServerMain"
+    }
+    mergeServiceFiles()
 }
 
 flyway {

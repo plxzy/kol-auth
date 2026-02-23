@@ -6,6 +6,7 @@ build/
 .DS_Store
 .env
 .env.*
+!.env.example
 /out/
 /logs/
 !gradle/wrapper/gradle-wrapper.jar

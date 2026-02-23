@@ -9,7 +9,9 @@ FROM eclipse-temurin:25-jre
 WORKDIR /app
 
 # Copy the fat jar from builder
-COPY --from=builder /app/auth-server/build/libs/*.jar app.jar
+COPY --from=builder /app/auth-server/build/libs/*-all.jar app.jar
+
+COPY --from=builder /app/auth-server/migrations auth-server/migrations
 
 # Expose port
 EXPOSE 8080
@@ -27,5 +29,4 @@ ENV AUTH_DB_URL=jdbc:postgresql://postgres:5432/kol_auth \
     ARGON2_MEMORY_KIB=65536 \
     ARGON2_PARALLELISM=4
 
-# Run migrations and start server
-ENTRYPOINT ["sh", "-c", "java -jar app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Xmx192m -XX:MaxMetaspaceSize=64m -XX:+UseContainerSupport -jar app.jar"]
